@@ -39,3 +39,9 @@ export const normalizePhase1Faces = (faces) =>
     acc[faceKey] = faces[faceKey] || Array(4).fill(PHASE1_COLORS[0]);
     return acc;
   }, {});
+
+export const isPhase1FaceAligned = (faceKey, cells = []) => {
+  const target = TARGETS[faceKey];
+  if (!target) return false;
+  return cells.every((color) => color === target);
+};

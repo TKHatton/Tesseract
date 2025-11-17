@@ -8,6 +8,7 @@ const GameCanvas = ({
   onPhase3Rotate,
   onFaceSelect,
   musicEngine,
+  onPlayerInteract,
 }) => {
   const containerRef = useRef(null);
   const physicsRef = useRef(null);
@@ -25,20 +26,29 @@ const GameCanvas = ({
       }
       const engine = new CubePhysics(containerRef.current, {
         onCellInteract: (target) => {
+          onPlayerInteract?.();
           onCellInteract?.(target);
           musicEngine?.trigger('click', { index: target.index });
         },
         onPhase3Rotate: (face, direction) => {
+          onPlayerInteract?.();
           onPhase3Rotate?.(face, direction);
           musicEngine?.trigger('rotate', { index: direction > 0 ? 2 : 4 });
         },
-        onFaceSelect,
+        onFaceSelect: (...args) => {
+          onPlayerInteract?.();
+          onFaceSelect?.(...args);
+        },
         onRotate: ({ deltaX }) => {
           if (Math.abs(deltaX) > 0.002) {
+            onPlayerInteract?.();
             musicEngine?.trigger('rotate', { index: Math.floor(Math.abs(deltaX) * 10) });
           }
         },
-        onInteraction: () => musicEngine?.resume(),
+        onInteraction: () => {
+          musicEngine?.resume();
+          onPlayerInteract?.();
+        },
       });
       physicsRef.current = engine;
       if (phaseState) {
