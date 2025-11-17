@@ -13,27 +13,45 @@ const GameCanvas = ({
   const physicsRef = useRef(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const engine = new CubePhysics(containerRef.current, {
-      onCellInteract: (target) => {
-        onCellInteract?.(target);
-        musicEngine?.trigger('click', { index: target.index });
-      },
-      onPhase3Rotate: (face, direction) => {
-        onPhase3Rotate?.(face, direction);
-        musicEngine?.trigger('rotate', { index: direction > 0 ? 2 : 4 });
-      },
-      onFaceSelect,
-      onRotate: ({ deltaX }) => {
-        if (Math.abs(deltaX) > 0.002) {
-          musicEngine?.trigger('rotate', { index: Math.floor(Math.abs(deltaX) * 10) });
-        }
-      },
-      onInteraction: () => musicEngine?.resume(),
-    });
-    physicsRef.current = engine;
+    if (!containerRef.current) return undefined;
+    let disposed = false;
+    let raf;
+
+    const init = () => {
+      if (disposed) return;
+      if (!window.THREE) {
+        raf = requestAnimationFrame(init);
+        return;
+      }
+      const engine = new CubePhysics(containerRef.current, {
+        onCellInteract: (target) => {
+          onCellInteract?.(target);
+          musicEngine?.trigger('click', { index: target.index });
+        },
+        onPhase3Rotate: (face, direction) => {
+          onPhase3Rotate?.(face, direction);
+          musicEngine?.trigger('rotate', { index: direction > 0 ? 2 : 4 });
+        },
+        onFaceSelect,
+        onRotate: ({ deltaX }) => {
+          if (Math.abs(deltaX) > 0.002) {
+            musicEngine?.trigger('rotate', { index: Math.floor(Math.abs(deltaX) * 10) });
+          }
+        },
+        onInteraction: () => musicEngine?.resume(),
+      });
+      physicsRef.current = engine;
+      if (phaseState) {
+        engine.setPhase(phase, phaseState);
+      }
+    };
+
+    init();
+
     return () => {
-      engine.dispose();
+      disposed = true;
+      if (raf) cancelAnimationFrame(raf);
+      physicsRef.current?.dispose();
       physicsRef.current = null;
     };
   }, [musicEngine, onCellInteract, onFaceSelect, onPhase3Rotate]);
@@ -41,7 +59,7 @@ const GameCanvas = ({
   useEffect(() => {
     if (!physicsRef.current || !phaseState) return;
     physicsRef.current.setPhase(phase, phaseState);
-  }, [phase]);
+  }, [phase, phaseState]);
 
   useEffect(() => {
     if (!physicsRef.current || !phaseState) return;
