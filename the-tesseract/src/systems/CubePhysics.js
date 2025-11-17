@@ -299,6 +299,7 @@ export default class CubePhysics {
       roughness: 0.5,
       transparent: true,
       opacity: 0.95,
+      side: this.THREE.DoubleSide,
     });
     return new this.THREE.Mesh(geometry, material);
   }
