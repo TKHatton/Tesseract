@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import GameCanvas from './components/GameCanvas';
 import NarrativeOverlay from './components/NarrativeOverlay';
 import HUD from './components/HUD';
@@ -48,30 +48,31 @@ const HINTS = {
   3: 'Select a fragment, then drag to rotate it. Align every constellation shard.',
 };
 
-const OPENING_TUTORIAL = {
-  title: 'Welcome, Keeper',
-  subtitle: 'Rotate the Tesseract, interact with its faces, and fulfill each phase objective.',
+const CONTROL_TUTORIAL = {
+  title: 'Tesseract Controls',
+  subtitle: 'Drag anywhere to orbit the camera, and scroll to zoom.',
   lines: [
-    'Drag anywhere to orbit the camera around the artifact.',
-    'Click glowing quadrants or sigils to cycle them.',
-    'Match every face to its goal to ignite the next phase.',
+    'Click glowing quadrants/sigils to change them.',
+    'Six faces, four tiles each - restore the pattern on every side.',
+    'Need a refresher? Tap the ? button anytime.',
   ],
-  accent: 'Tutorial',
+  accent: 'Controls',
+  buttonLabel: 'Got It',
 };
 
 const PHASE_INTRO_COPY = {
   1: {
-    title: 'Phase I — Awakening',
+    title: 'Phase I - Awakening',
     subtitle: 'Unify each visible face with a single color to restore Harmony.',
-    lines: ['Colors cycle in this order: Red → Blue → Green → Purple.'],
+    lines: ['Colors cycle in this order: Red -> Blue -> Green -> Purple.'],
   },
   2: {
-    title: 'Phase II — Resonance',
+    title: 'Phase II - Resonance',
     subtitle: 'Align complementary sigils so golden connections bloom across every edge.',
     lines: ['Watch for glowing beams: Tree + Water, Fire + Wind, Star + Eye, Spiral + Infinity.'],
   },
   3: {
-    title: 'Phase III — Convergence',
+    title: 'Phase III - Convergence',
     subtitle: 'Select each floating fragment, rotate it, and rebuild the constellation.',
     lines: ['Lightning will arc when fragments remember their place.'],
   },
@@ -82,6 +83,8 @@ const CONTEXT_HINTS = {
   2: 'Spin the cube and look for dim edges. Complementary symbols must sit side-by-side.',
   3: 'Select a fragment, drag horizontally, and watch for the Phoenix constellation to line up.',
 };
+
+const CONTEXT_MOVE_DELAY = 20;
 
 const App = () => {
   const [phase, setPhase] = useState(1);
@@ -98,13 +101,16 @@ const App = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [fragmentsAligned, setFragmentsAligned] = useState(0);
   const [phase3ConnectionIndex, setPhase3ConnectionIndex] = useState(0);
-  const [activeTutorial, setActiveTutorial] = useState({ type: 'opening' });
+  const [activeTutorial, setActiveTutorial] = useState(null);
   const [phaseIntroSeen, setPhaseIntroSeen] = useState({ 1: false, 2: false, 3: false });
   const [movesSinceProgress, setMovesSinceProgress] = useState(0);
   const [lastContextHintStep, setLastContextHintStep] = useState(0);
   const [showIndicators, setShowIndicators] = useState(true);
+  const [tutorialDismissed, setTutorialDismissed] = useState(false);
+  const [movesSinceTutorialDismiss, setMovesSinceTutorialDismiss] = useState(0);
   const musicEngineRef = useRef(null);
   const narrativeRef = useRef(null);
+  const controlTimerRef = useRef(null);
 
   useEffect(() => {
     musicEngineRef.current = new MusicEngine();
@@ -117,6 +123,23 @@ const App = () => {
     };
   }, []);
 
+  const openControlsTutorial = useCallback(
+    (variant = 'help') => {
+      setTutorialDismissed(false);
+      setMovesSinceTutorialDismiss(0);
+      setShowIndicators(true);
+      setActiveTutorial({ type: 'controls', variant });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    controlTimerRef.current = setTimeout(() => {
+      openControlsTutorial('opening');
+    }, 4200);
+    return () => clearTimeout(controlTimerRef.current);
+  }, [openControlsTutorial]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTime(Math.floor((Date.now() - startTime) / 1000));
@@ -125,12 +148,16 @@ const App = () => {
   }, [startTime]);
 
   useEffect(() => {
+    if (!tutorialDismissed || movesSinceTutorialDismiss < 20) {
+      setHint('');
+      return;
+    }
     if (moves >= (MOVE_HINT_THRESHOLDS[phase] || Infinity)) {
       setHint(HINTS[phase]);
     } else {
       setHint('');
     }
-  }, [moves, phase]);
+  }, [moves, phase, tutorialDismissed, movesSinceTutorialDismiss]);
 
   useEffect(() => {
     if (phase === 2) {
@@ -171,14 +198,22 @@ const App = () => {
 
   useEffect(() => {
     if (activeTutorial) return;
-    if (movesSinceProgress >= 20 && movesSinceProgress - lastContextHintStep >= 20) {
+    if (!tutorialDismissed || movesSinceTutorialDismiss < CONTEXT_MOVE_DELAY) return;
+    if (movesSinceProgress >= CONTEXT_MOVE_DELAY && movesSinceProgress - lastContextHintStep >= CONTEXT_MOVE_DELAY) {
       const hint = CONTEXT_HINTS[phase];
       if (hint) {
         setActiveTutorial({ type: 'context', message: hint });
         setLastContextHintStep(movesSinceProgress);
       }
     }
-  }, [activeTutorial, movesSinceProgress, lastContextHintStep, phase]);
+  }, [
+    activeTutorial,
+    movesSinceProgress,
+    lastContextHintStep,
+    phase,
+    tutorialDismissed,
+    movesSinceTutorialDismiss,
+  ]);
 
   const registerProgress = useCallback(() => {
     setMovesSinceProgress(0);
@@ -186,13 +221,6 @@ const App = () => {
     setShowIndicators(false);
     setActiveTutorial((current) => (current?.type === 'context' ? null : current));
   }, []);
-
-  useEffect(() => {
-    if (activeTutorial) return;
-    if (!phaseIntroSeen[phase]) {
-      setActiveTutorial({ type: 'phase', phase });
-    }
-  }, [activeTutorial, phase, phaseIntroSeen]);
 
   const handlePhaseVictory = useCallback(() => {
     setStats((prev) => ({
@@ -249,6 +277,9 @@ const App = () => {
     if (transition.active) return;
     setMoves((value) => value + 1);
     setMovesSinceProgress((value) => value + 1);
+    if (tutorialDismissed) {
+      setMovesSinceTutorialDismiss((value) => value + 1);
+    }
     setShowIndicators(false);
     if (phase === 1) {
       applyPhaseStateUpdate((prev) => {
@@ -280,7 +311,11 @@ const App = () => {
   const handlePhase3Rotate = (faceKey, direction) => {
     if (transition.active) return;
     if (phase !== 3) return;
+    setMoves((value) => value + 1);
     setMovesSinceProgress((value) => value + 1);
+    if (tutorialDismissed) {
+      setMovesSinceTutorialDismiss((value) => value + 1);
+    }
     setShowIndicators(false);
     applyPhaseStateUpdate((prev) => {
       const faces = rotateFaceOrientation(prev.faces, faceKey, direction);
@@ -312,6 +347,10 @@ const App = () => {
     setMovesSinceProgress(0);
     setLastContextHintStep(0);
     setShowIndicators(true);
+    setMovesSinceTutorialDismiss(0);
+    setTutorialDismissed(true);
+    setMovesSinceTutorialDismiss(0);
+    setTutorialDismissed(true);
     musicEngineRef.current?.setPhase(nextPhase);
     if (nextPhase === 2) {
       narrativeRef.current?.sequence(NARRATIVE_SCRIPT.phase2.intro, { position: 'center', gap: 2400 });
@@ -320,7 +359,9 @@ const App = () => {
       narrativeRef.current?.sequence(NARRATIVE_SCRIPT.phase3.intro, { position: 'center', gap: 2400 });
     }
     if (!phaseIntroSeen[nextPhase]) {
-      setActiveTutorial({ type: 'phase', phase: nextPhase });
+      setTimeout(() => {
+        setActiveTutorial({ type: 'phase', phase: nextPhase });
+      }, 2400);
     }
     setPendingPhase(null);
   }, [pendingPhase, phaseIntroSeen]);
@@ -337,6 +378,8 @@ const App = () => {
     setMovesSinceProgress(0);
     setLastContextHintStep(0);
     setShowIndicators(true);
+    setMovesSinceTutorialDismiss(0);
+    setTutorialDismissed(true);
     setActiveTutorial((current) => (current?.type === 'context' ? null : current));
   }, [phase]);
 
@@ -361,15 +404,20 @@ const App = () => {
 
   const dismissTutorial = useCallback(() => {
     if (!activeTutorial) return;
-    if (activeTutorial.type === 'opening') {
-      setActiveTutorial(!phaseIntroSeen[phase] ? { type: 'phase', phase } : null);
-      setShowIndicators(true);
+    if (activeTutorial.type === 'controls') {
+      setActiveTutorial(null);
+      setTutorialDismissed(true);
+      setMovesSinceTutorialDismiss(0);
+      if (!phaseIntroSeen[phase]) {
+        setTimeout(() => {
+          setActiveTutorial({ type: 'phase', phase });
+        }, 400);
+      }
       return;
     }
     if (activeTutorial.type === 'phase') {
       setPhaseIntroSeen((prev) => ({ ...prev, [activeTutorial.phase]: true }));
       setActiveTutorial(null);
-      setShowIndicators(true);
       return;
     }
     if (activeTutorial.type === 'context') {
@@ -381,8 +429,8 @@ const App = () => {
 
   const tutorialConfig = (() => {
     if (!activeTutorial) return null;
-    if (activeTutorial.type === 'opening') {
-      return OPENING_TUTORIAL;
+    if (activeTutorial.type === 'controls') {
+      return CONTROL_TUTORIAL;
     }
     if (activeTutorial.type === 'phase') {
       const copy = PHASE_INTRO_COPY[activeTutorial.phase];
@@ -393,9 +441,9 @@ const App = () => {
       return {
         title: 'Hint',
         subtitle: null,
-        lines: [activeTutorial.message],
+        lines: [activeTutorial.message || CONTEXT_HINTS[phase]],
         accent: 'Need a nudge?',
-        dismissLabel: 'Understood — click to continue',
+        dismissLabel: 'Understood',
       };
     }
     return null;
@@ -431,7 +479,14 @@ const App = () => {
         musicEngine={musicEngineRef.current}
         onPlayerInteract={handlePlayerInteract}
       />
-      <ClickIndicators visible={showIndicators} phase={phase} />
+      <button
+        type="button"
+        onClick={() => openControlsTutorial('help')}
+        className="absolute top-4 right-4 z-50 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs tracking-[0.3em]"
+      >
+        ?
+      </button>
+      <ClickIndicators visible={showIndicators && !activeTutorial} phase={phase} />
       <NarrativeOverlay messages={messages} floatingTexts={floatingTexts} />
       <HUD
         phase={phase}
@@ -459,3 +514,7 @@ const App = () => {
 };
 
 export default App;
+
+
+
+

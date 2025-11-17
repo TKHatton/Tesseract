@@ -3,12 +3,12 @@ import { createRange } from '../utils/helpers';
 import ParticleSystem from './ParticleSystem';
 
 const FACE_TRANSFORMS = {
-  front: { rotation: [0, 0, 0], position: [0, 0, 0.5] },
-  back: { rotation: [0, Math.PI, 0], position: [0, 0, -0.5] },
-  left: { rotation: [0, Math.PI / 2, 0], position: [-0.5, 0, 0] },
-  right: { rotation: [0, -Math.PI / 2, 0], position: [0.5, 0, 0] },
-  top: { rotation: [-Math.PI / 2, 0, 0], position: [0, 0.5, 0] },
-  bottom: { rotation: [Math.PI / 2, 0, 0], position: [0, -0.5, 0] },
+  front: { rotation: [0, 0, 0], position: [0, 0, 0.58] },
+  back: { rotation: [0, Math.PI, 0], position: [0, 0, -0.58] },
+  left: { rotation: [0, Math.PI / 2, 0], position: [-0.58, 0, 0] },
+  right: { rotation: [0, -Math.PI / 2, 0], position: [0.58, 0, 0] },
+  top: { rotation: [-Math.PI / 2, 0, 0], position: [0, 0.58, 0] },
+  bottom: { rotation: [Math.PI / 2, 0, 0], position: [0, -0.58, 0] },
 };
 
 const GRID_SIZE_PHASE1 = 2;
@@ -43,11 +43,14 @@ export default class CubePhysics {
     this.clickTargets = [];
     this.phase3FaceGroups = new Map();
     this.symbolMaterials = new Map();
-    this.dragging = false;
+    this.draggingFace = false;
     this.phase = 1;
     this.phaseState = null;
     this.phase3Selection = null;
     this.phase3RotationAccumulator = 0;
+    this.lastPointer = null;
+    this.coreCube = null;
+    this.controls = null;
     this.particles = new ParticleSystem(this.scene);
     this.backgrounds = {
       1: new this.THREE.Color('#0a0a0f'),
@@ -56,6 +59,7 @@ export default class CubePhysics {
     };
     this.animationFrame = null;
     this.initLights();
+    this.initControls();
     this.bindEvents();
     this.animate = this.animate.bind(this);
     this.animate();
@@ -86,58 +90,73 @@ export default class CubePhysics {
     this.scene.add(dir2);
   }
 
-  handlePointerDown = (event) => {
-    if (!this.renderer) return;
+  initControls() {
+    if (!this.THREE?.OrbitControls) {
+      console.warn('OrbitControls missing. Camera controls disabled.');
+      return;
+    }
+    this.controls = new this.THREE.OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.08;
+    this.controls.enablePan = false;
+    this.controls.minDistance = 2.6;
+    this.controls.maxDistance = 7;
+    this.controls.target.set(0, 0, 0);
+    this.controls.addEventListener('start', () => this.callbacks.onInteraction?.());
+  }
+
+  getIntersections(event) {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.clickTargets, true);
+    return this.raycaster.intersectObjects(this.clickTargets, true);
+  }
+
+  handlePointerDown = (event) => {
+    if (!this.renderer) return;
+    const intersects = this.getIntersections(event);
     if (intersects.length) {
       const target = intersects[0].object.userData;
       if (!target) return;
-      if (target.type === 'cell' && this.callbacks.onCellInteract) {
-        this.callbacks.onCellInteract(target);
+      if (target.type === 'cell') {
+        this.callbacks.onCellInteract?.(target);
+        this.callbacks.onInteraction?.();
+        return;
       }
       if (target.type === 'face-select') {
         this.phase3Selection = target.face;
         this.phase3RotationAccumulator = 0;
+        this.draggingFace = true;
+        this.lastPointer = { x: event.clientX, y: event.clientY };
         this.highlightPhase3Face(target.face);
         this.callbacks.onFaceSelect?.(target.face);
+        this.callbacks.onInteraction?.();
+        return;
       }
-      this.callbacks.onInteraction?.();
-      return;
     }
-    this.dragging = true;
-    this.lastPointer = { x: event.clientX, y: event.clientY };
+    this.draggingFace = false;
+    this.lastPointer = null;
   };
 
   handlePointerMove = (event) => {
-    if (!this.dragging) return;
-    if (!this.lastPointer) return;
+    if (this.phase !== 3 || !this.draggingFace || !this.phase3Selection || !this.lastPointer) return;
     const deltaX = (event.clientX - this.lastPointer.x) * 0.005;
-    const deltaY = (event.clientY - this.lastPointer.y) * 0.005;
-    if (this.phase === 3 && this.phase3Selection) {
-      this.phase3RotationAccumulator += deltaX;
-      if (Math.abs(this.phase3RotationAccumulator) > Math.PI / 8) {
-        const direction = this.phase3RotationAccumulator > 0 ? 1 : -1;
-        this.callbacks.onPhase3Rotate?.(this.phase3Selection, direction);
-        this.phase3RotationAccumulator = 0;
-      }
-      const group = this.phase3FaceGroups.get(this.phase3Selection);
-      if (group) {
-        group.rotation.z += deltaX * 1.2;
-      }
-    } else {
-      this.rootGroup.rotation.y += deltaX;
-      this.rootGroup.rotation.x += deltaY;
-      this.callbacks.onRotate?.({ deltaX, deltaY });
+    this.phase3RotationAccumulator += deltaX;
+    if (Math.abs(this.phase3RotationAccumulator) > Math.PI / 12) {
+      const direction = this.phase3RotationAccumulator > 0 ? 1 : -1;
+      this.callbacks.onPhase3Rotate?.(this.phase3Selection, direction);
+      this.phase3RotationAccumulator = 0;
+    }
+    const group = this.phase3FaceGroups.get(this.phase3Selection);
+    if (group) {
+      group.rotation.z += deltaX * 1.2;
     }
     this.lastPointer = { x: event.clientX, y: event.clientY };
   };
 
   handlePointerUp = () => {
-    this.dragging = false;
+    this.draggingFace = false;
     this.lastPointer = null;
   };
 
@@ -152,11 +171,19 @@ export default class CubePhysics {
   setPhase(phase = 1, state = null) {
     this.phase = phase;
     this.phaseState = state;
+    if (this.coreCube) {
+      this.coreCube.geometry.dispose();
+      this.coreCube.material.dispose();
+      this.coreCube = null;
+    }
     this.rootGroup.clear();
     this.clickTargets = [];
     this.phase3FaceGroups.clear();
     this.phase3Selection = null;
     this.scene.background = this.backgrounds[phase] || null;
+    if (phase !== 3) {
+      this.buildCoreCube();
+    }
     if (phase === 1) {
       this.buildPhase1(state);
     } else if (phase === 2) {
@@ -166,6 +193,10 @@ export default class CubePhysics {
     }
     const particleColor = PHASES[phase - 1]?.particleColor || '#ffffff';
     this.particles.configure(phase, PARTICLE_TARGETS[phase], particleColor);
+    if (state) {
+      this.updatePhaseState(state);
+    }
+    this.updateControlBounds();
   }
 
   buildPhase1(state) {
@@ -291,6 +322,36 @@ export default class CubePhysics {
     return group;
   }
 
+  buildCoreCube() {
+    if (this.coreCube) {
+      this.coreCube.geometry.dispose();
+      this.coreCube.material.dispose();
+      this.coreCube = null;
+    }
+    const geometry = new this.THREE.BoxGeometry(1.12, 1.12, 1.12);
+    const material = new this.THREE.MeshStandardMaterial({
+      color: '#1b1c29',
+      metalness: 0.35,
+      roughness: 0.55,
+      transparent: true,
+      opacity: 0.92,
+    });
+    this.coreCube = new this.THREE.Mesh(geometry, material);
+    this.rootGroup.add(this.coreCube);
+  }
+
+  updateControlBounds() {
+    if (!this.controls) return;
+    if (this.phase === 3) {
+      this.controls.minDistance = 3.5;
+      this.controls.maxDistance = 10;
+    } else {
+      this.controls.minDistance = 2.4;
+      this.controls.maxDistance = 6.5;
+    }
+    this.controls.target.set(0, 0, 0);
+  }
+
   createCellMesh(color) {
     const geometry = new this.THREE.PlaneGeometry(1, 1);
     const material = new this.THREE.MeshStandardMaterial({
@@ -386,6 +447,7 @@ export default class CubePhysics {
   animate() {
     if (!this.renderer) return;
     this.animationFrame = requestAnimationFrame(this.animate);
+    this.controls?.update();
     if (this.phase === 3) {
       this.phase3FaceGroups.forEach((group) => {
         group.userData.angle += group.userData.speed * 0.01;
@@ -402,6 +464,7 @@ export default class CubePhysics {
     this.unbindEvents();
     cancelAnimationFrame(this.animationFrame);
     this.particles.dispose();
+    this.controls?.dispose?.();
     this.renderer.dispose();
     this.container.removeChild(this.renderer.domElement);
   }

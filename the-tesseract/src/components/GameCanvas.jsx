@@ -64,7 +64,7 @@ const GameCanvas = ({
       physicsRef.current?.dispose();
       physicsRef.current = null;
     };
-  }, [musicEngine, onCellInteract, onFaceSelect, onPhase3Rotate]);
+  }, [musicEngine, onCellInteract, onFaceSelect, onPhase3Rotate, onPlayerInteract]);
 
   useEffect(() => {
     if (!physicsRef.current || !phaseState) return;

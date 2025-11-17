@@ -9,7 +9,7 @@ const NarrativeOverlay = ({ messages = [], floatingTexts = [] }) => {
   );
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col text-center px-6 py-6">
+    <div className="pointer-events-none absolute inset-0 flex flex-col text-center px-6 py-6 z-40">
       <div className="space-y-3">
         {grouped.top.map((message) => (
           <p

@@ -1,4 +1,4 @@
-export const PHASES = [
+﻿export const PHASES = [
   {
     id: 1,
     name: 'Awakening',
@@ -10,6 +10,8 @@ export const PHASES = [
       right: '#5B7C5A',
       left: '#6B5B7C',
       back: '#4A5B7C',
+      top: '#8B4049',
+      bottom: '#4A5B7C',
     },
   },
   {
@@ -31,15 +33,15 @@ export const PHASES = [
 export const PHASE1_COLORS = ['#8B4049', '#4A5B7C', '#5B7C5A', '#6B5B7C'];
 
 export const SYMBOLS = [
-  { id: 'tree', label: 'Tree', glyph: '🌳' },
-  { id: 'water', label: 'Water', glyph: '💧' },
-  { id: 'fire', label: 'Fire', glyph: '🔥' },
-  { id: 'wind', label: 'Wind', glyph: '💨' },
-  { id: 'star', label: 'Star', glyph: '⭐' },
-  { id: 'spiral', label: 'Spiral', glyph: '🌀' },
-  { id: 'crystal', label: 'Crystal', glyph: '💎' },
-  { id: 'eye', label: 'Eye', glyph: '👁' },
-  { id: 'infinity', label: 'Infinity', glyph: '∞' },
+  { id: 'tree', label: 'Tree', glyph: '\uD83C\uDF33' },
+  { id: 'water', label: 'Water', glyph: '\uD83D\uDCA7' },
+  { id: 'fire', label: 'Fire', glyph: '\uD83D\uDD25' },
+  { id: 'wind', label: 'Wind', glyph: '\uD83D\uDCA8' },
+  { id: 'star', label: 'Star', glyph: '\u2B50' },
+  { id: 'spiral', label: 'Spiral', glyph: '\uD83C\uDF00' },
+  { id: 'crystal', label: 'Crystal', glyph: '\uD83D\uDC8E' },
+  { id: 'eye', label: 'Eye', glyph: '\uD83D\uDC41' },
+  { id: 'infinity', label: 'Infinity', glyph: '\u221E' },
 ];
 
 export const SYMBOL_MAP = SYMBOLS.reduce((acc, symbol) => {
@@ -95,7 +97,7 @@ export const PHASE3_MEMORIES = [
 export const SCALE_MAP = {
   1: ['C4', 'D4', 'E4', 'G4', 'A4'],
   2: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
-  3: ['C3', 'C#3', 'D3', 'E♭3', 'E3', 'F3', 'F#3', 'G3'],
+  3: ['C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3'],
 };
 
 export const DRONE_PITCH = {
@@ -147,7 +149,7 @@ export const NARRATIVE_SCRIPT = {
   },
   phase2: {
     intro: [
-      'Phase II: Resonance — The Garden Grows.',
+      'Phase II: Resonance â€” The Garden Grows.',
       'Within the laws of physics, patterns emerge.',
       'Align the sigils of growth.',
     ],
@@ -160,7 +162,7 @@ export const NARRATIVE_SCRIPT = {
   },
   phase3: {
     intro: [
-      'Phase III: Convergence — The Universe Wakes.',
+      'Phase III: Convergence â€” The Universe Wakes.',
       'Consciousness is the universe folding back to observe itself.',
       'Bring the fragments together. Let them remember they are one.',
     ],
@@ -189,3 +191,8 @@ export const CONSTELLATION_FACE_ORDER = [
   'top',
   'bottom',
 ];
+
+
+
+
+

@@ -4,7 +4,7 @@ const ClickIndicators = ({ visible, phase }) => {
   const phaseMessage =
     phase === 3
       ? 'Select a fragment, then drag to rotate it.'
-      : 'Drag to rotate. Click glowing sections to change them.';
+      : 'Drag to orbit, scroll to zoom, click glowing sections.';
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">

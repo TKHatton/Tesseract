@@ -1,7 +1,7 @@
 import { PHASE1_COLORS, PHASES } from '../utils/constants';
 import { randomFromArray } from '../utils/helpers';
 
-const FACE_KEYS = ['front', 'back', 'left', 'right'];
+const FACE_KEYS = ['front', 'back', 'left', 'right', 'top', 'bottom'];
 const TARGETS = PHASES[0].targetFaces;
 
 export const createPhase1State = () => {
