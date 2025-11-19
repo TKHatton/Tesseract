@@ -106,7 +106,7 @@ const App = () => {
   const [movesSinceProgress, setMovesSinceProgress] = useState(0);
   const [lastContextHintStep, setLastContextHintStep] = useState(0);
   const [showIndicators, setShowIndicators] = useState(true);
-  const [tutorialDismissed, setTutorialDismissed] = useState(false);
+  const [tutorialDismissed, setTutorialDismissed] = useState(true);
   const [movesSinceTutorialDismiss, setMovesSinceTutorialDismiss] = useState(0);
   const musicEngineRef = useRef(null);
   const narrativeRef = useRef(null);
@@ -133,12 +133,13 @@ const App = () => {
     [],
   );
 
-  useEffect(() => {
-    controlTimerRef.current = setTimeout(() => {
-      openControlsTutorial('opening');
-    }, 4200);
-    return () => clearTimeout(controlTimerRef.current);
-  }, [openControlsTutorial]);
+  // Removed automatic tutorial popup - users can click the ? button when ready
+  // useEffect(() => {
+  //   controlTimerRef.current = setTimeout(() => {
+  //     openControlsTutorial('opening');
+  //   }, 4200);
+  //   return () => clearTimeout(controlTimerRef.current);
+  // }, [openControlsTutorial]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -482,7 +483,8 @@ const App = () => {
       <button
         type="button"
         onClick={() => openControlsTutorial('help')}
-        className="absolute top-4 right-4 z-50 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs tracking-[0.3em]"
+        className="absolute top-4 right-4 z-50 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-lg font-bold transition-all hover:scale-110"
+        title="Instructions"
       >
         ?
       </button>
