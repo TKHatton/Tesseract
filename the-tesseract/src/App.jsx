@@ -251,7 +251,7 @@ const App = () => {
     }, phase === 1 ? 3000 : 2800); // Delay for narrative to finish
   }, [moves, phase, time]);
 
-  const applyPhaseStateUpdate = (updater) => {
+  const applyPhaseStateUpdate = useCallback((updater) => {
     let didComplete = false;
     let progressed = false;
     setPhaseState((prev) => {
@@ -277,9 +277,9 @@ const App = () => {
     if (didComplete) {
       handlePhaseVictory();
     }
-  };
+  }, [phase, registerProgress, handlePhaseVictory]);
 
-  const handleCellInteract = ({ face, index }) => {
+  const handleCellInteract = useCallback(({ face, index }) => {
     if (transition.active) return;
     setMoves((value) => value + 1);
     setMovesSinceProgress((value) => value + 1);
@@ -312,9 +312,9 @@ const App = () => {
         };
       });
     }
-  };
+  }, [transition.active, tutorialDismissed, phase, applyPhaseStateUpdate]);
 
-  const handlePhase3Rotate = (faceKey, direction) => {
+  const handlePhase3Rotate = useCallback((faceKey, direction) => {
     if (transition.active) return;
     if (phase !== 3) return;
     setMoves((value) => value + 1);
@@ -335,7 +335,7 @@ const App = () => {
       const previousAligned = countAlignedFaces(prev.faces);
       return { state: { ...prev, faces }, progress: aligned > previousAligned };
     });
-  };
+  }, [transition.active, phase, tutorialDismissed, phase3ConnectionIndex, applyPhaseStateUpdate]);
 
   const handleRiddleSolve = useCallback(
     (answer) => {
@@ -419,12 +419,12 @@ const App = () => {
     });
   }, []);
 
-  const handleFaceSelect = () => {
+  const handleFaceSelect = useCallback(() => {
     if (phase === 3) {
       const memory = randomFromArray(PHASE3_MEMORIES);
       narrativeRef.current?.push(memory, { position: 'top', duration: 3200 });
     }
-  };
+  }, [phase]);
 
   const handlePlayerInteract = useCallback(() => {
     setShowIndicators(false);
