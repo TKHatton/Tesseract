@@ -5,6 +5,8 @@ import HUD from './components/HUD';
 import PhaseManager from './components/PhaseManager';
 import TutorialOverlay from './components/TutorialOverlay';
 import ClickIndicators from './components/ClickIndicators';
+import RiddleOverlay from './components/RiddleOverlay';
+import { generateRiddle, validateAnswer } from './services/riddleService';
 import {
   PHASES,
   MOVE_HINT_THRESHOLDS,
@@ -108,6 +110,8 @@ const App = () => {
   const [showIndicators, setShowIndicators] = useState(true);
   const [tutorialDismissed, setTutorialDismissed] = useState(true);
   const [movesSinceTutorialDismiss, setMovesSinceTutorialDismiss] = useState(0);
+  const [currentRiddle, setCurrentRiddle] = useState(null);
+  const [riddleActive, setRiddleActive] = useState(false);
   const musicEngineRef = useRef(null);
   const narrativeRef = useRef(null);
   const controlTimerRef = useRef(null);
@@ -223,7 +227,7 @@ const App = () => {
     setActiveTutorial((current) => (current?.type === 'context' ? null : current));
   }, []);
 
-  const handlePhaseVictory = useCallback(() => {
+  const handlePhaseVictory = useCallback(async () => {
     setStats((prev) => ({
       ...prev,
       [phase]: { moves, time: formatTime(time) },
@@ -237,13 +241,14 @@ const App = () => {
       narrativeRef.current?.sequence(NARRATIVE_SCRIPT.phase3.finale, { position: 'center', gap: 3200 });
     }
     if (phase >= 3) return;
+
+    // Load riddle before allowing phase transition
     setPendingPhase(phase + 1);
-    setTransition({
-      active: true,
-      from: phase,
-      to: phase + 1,
-      script: PHASE_TRANSITION_SCRIPT[phase] || [],
-    });
+    setTimeout(async () => {
+      const riddle = await generateRiddle(phase + 1);
+      setCurrentRiddle(riddle);
+      setRiddleActive(true);
+    }, phase === 1 ? 3000 : 2800); // Delay for narrative to finish
   }, [moves, phase, time]);
 
   const applyPhaseStateUpdate = (updater) => {
@@ -331,6 +336,28 @@ const App = () => {
       return { state: { ...prev, faces }, progress: aligned > previousAligned };
     });
   };
+
+  const handleRiddleSolve = useCallback(
+    (answer) => {
+      if (!currentRiddle) return false;
+      const isCorrect = validateAnswer(answer, currentRiddle.answer);
+      if (isCorrect) {
+        setRiddleActive(false);
+        setCurrentRiddle(null);
+        // Start phase transition after riddle is solved
+        setTimeout(() => {
+          setTransition({
+            active: true,
+            from: phase,
+            to: pendingPhase,
+            script: PHASE_TRANSITION_SCRIPT[phase] || [],
+          });
+        }, 500);
+      }
+      return isCorrect;
+    },
+    [currentRiddle, phase, pendingPhase],
+  );
 
   const completeTransition = useCallback(() => {
     if (!pendingPhase) return;
@@ -516,6 +543,9 @@ const App = () => {
         onComplete={completeTransition}
       />
       <TutorialOverlay config={tutorialConfig} onDismiss={dismissTutorial} />
+      {riddleActive && currentRiddle && (
+        <RiddleOverlay riddle={currentRiddle} onSolve={handleRiddleSolve} phase={pendingPhase} />
+      )}
     </div>
   );
 };
