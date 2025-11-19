@@ -69,7 +69,7 @@ const GameCanvas = ({
   useEffect(() => {
     if (!physicsRef.current || !phaseState) return;
     physicsRef.current.setPhase(phase, phaseState);
-  }, [phase, phaseState]);
+  }, [phase]); // Only rebuild scene when phase changes, not on every state update
 
   useEffect(() => {
     if (!physicsRef.current || !phaseState) return;
