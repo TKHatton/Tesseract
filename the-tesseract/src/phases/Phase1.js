@@ -30,7 +30,9 @@ export const cyclePhase1Color = (currentColor) => {
 export const checkPhase1Win = (state) => {
   return FACE_KEYS.every((faceKey) => {
     const face = state.faces[faceKey];
-    return face.every((cellColor) => cellColor === TARGETS[faceKey]);
+    // Check if all cells on this face are the same color (any color)
+    const firstColor = face[0];
+    return face.every((cellColor) => cellColor === firstColor);
   });
 };
 
@@ -41,7 +43,8 @@ export const normalizePhase1Faces = (faces) =>
   }, {});
 
 export const isPhase1FaceAligned = (faceKey, cells = []) => {
-  const target = TARGETS[faceKey];
-  if (!target) return false;
-  return cells.every((color) => color === target);
+  if (!cells || cells.length === 0) return false;
+  // Check if all cells are the same color (any color)
+  const firstColor = cells[0];
+  return cells.every((color) => color === firstColor);
 };
