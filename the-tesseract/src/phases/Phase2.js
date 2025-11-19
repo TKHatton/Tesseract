@@ -91,11 +91,13 @@ export const createPhase2State = () => {
 };
 
 export const checkPhase2Win = (faces) => {
-  return FACE_KEYS.every((faceKey) => {
-    const target = PHASE2_TARGETS[faceKey];
-    const current = faces[faceKey];
-    return target.every((symbolId, index) => current[index] === symbolId);
-  });
+  // Win condition: Check if there are enough adjacency matches (golden connections)
+  const matches = buildAdjacencyMatches(faces);
+  // A 3x3 grid has 12 possible horizontal adjacencies (4 per row × 3 rows)
+  // and 12 possible vertical adjacencies (3 per column × 4 columns) = 24 total per face
+  // With 6 faces, we need a substantial number of matches to consider it solved
+  // Let's require at least 30 golden connections (reasonable win condition)
+  return matches.length >= 30;
 };
 
 const neighborIndex = (gridSize, row, col) => row * gridSize + col;
