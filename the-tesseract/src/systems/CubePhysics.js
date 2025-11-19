@@ -116,10 +116,13 @@ export default class CubePhysics {
   handlePointerDown = (event) => {
     if (!this.renderer) return;
     const intersects = this.getIntersections(event);
+    console.log('Click detected! Intersects:', intersects.length, 'Click targets:', this.clickTargets.length);
     if (intersects.length) {
       const target = intersects[0].object.userData;
+      console.log('Target userData:', target);
       if (!target) return;
       if (target.type === 'cell') {
+        console.log('Cell clicked:', target);
         this.callbacks.onCellInteract?.(target);
         this.callbacks.onInteraction?.();
         return;
