@@ -30,21 +30,22 @@ export const handler = async (event) => {
             role: 'system',
             content: `You are a mystical oracle creating riddles for The Tesseract game. Create riddles themed around ${theme}. Each riddle should be:
 - Short (2-3 lines max)
-- Mystical and cosmic in tone
-- Have a single-word answer
-- Be solvable with thought
+- Mystical and cosmic in tone but SOLVABLE and not too obscure
+- Have a simple, common word as the answer (avoid abstract concepts)
+- Be solvable with reasonable thought - not too cryptic
 - Different from previous riddles: ${previousRiddles.join(', ') || 'none yet'}
 
 Return ONLY a JSON object with this format:
 {
   "riddle": "the riddle text",
-  "answer": "single word answer",
-  "hint": "optional hint if stuck"
+  "answer": "primary answer (single common word)",
+  "alternateAnswers": ["alternate1", "alternate2"],
+  "hint": "a clear hint that makes the answer more obvious"
 }`,
           },
           {
             role: 'user',
-            content: `Generate a riddle for Phase ${phase} about ${theme}.`,
+            content: `Generate a solvable riddle for Phase ${phase} about ${theme}. Keep the answer simple and include 2-3 alternate accepted answers.`,
           },
         ],
         temperature: 0.9,

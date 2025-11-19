@@ -30,9 +30,21 @@ export const generateRiddle = async (phase) => {
   }
 };
 
-export const validateAnswer = (userAnswer, correctAnswer) => {
+export const validateAnswer = (userAnswer, riddleData) => {
   const normalized = (str) => str.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
-  return normalized(userAnswer) === normalized(correctAnswer);
+  const normalizedUser = normalized(userAnswer);
+
+  // Check primary answer
+  if (normalizedUser === normalized(riddleData.answer)) {
+    return true;
+  }
+
+  // Check alternate answers if they exist
+  if (riddleData.alternateAnswers && Array.isArray(riddleData.alternateAnswers)) {
+    return riddleData.alternateAnswers.some(alt => normalizedUser === normalized(alt));
+  }
+
+  return false;
 };
 
 const getFallbackRiddle = (phase) => {
@@ -40,16 +52,19 @@ const getFallbackRiddle = (phase) => {
     1: {
       riddle: 'I am the beginning and the end, the first and the last. In unity, all shades of me become one. What am I?',
       answer: 'light',
+      alternateAnswers: ['color', 'white', 'spectrum'],
       hint: 'Without me, color cannot exist',
     },
     2: {
       riddle: 'We are two, yet one. Opposite in nature, complementary in spirit. When we meet, harmony blooms. What are we?',
       answer: 'pair',
+      alternateAnswers: ['partners', 'duo', 'match'],
       hint: 'Think of the matching symbols',
     },
     3: {
       riddle: 'Scattered across the void, I once told stories. Bring me together, and I shall shine again. What am I?',
       answer: 'constellation',
+      alternateAnswers: ['stars', 'phoenix', 'pattern'],
       hint: 'Look to the stars',
     },
   };

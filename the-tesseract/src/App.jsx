@@ -343,7 +343,7 @@ const App = () => {
   const handleRiddleSolve = useCallback(
     (answer) => {
       if (!currentRiddle) return false;
-      const isCorrect = validateAnswer(answer, currentRiddle.answer);
+      const isCorrect = validateAnswer(answer, currentRiddle);
       if (isCorrect) {
         setRiddleActive(false);
         setCurrentRiddle(null);
