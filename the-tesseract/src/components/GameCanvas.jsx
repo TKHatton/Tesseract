@@ -12,6 +12,23 @@ const GameCanvas = ({
 }) => {
   const containerRef = useRef(null);
   const physicsRef = useRef(null);
+  // Use refs to store callbacks to avoid recreating CubePhysics on every callback change
+  const callbacksRef = useRef({
+    onCellInteract,
+    onPhase3Rotate,
+    onFaceSelect,
+    onPlayerInteract,
+  });
+
+  // Update callback refs whenever they change
+  useEffect(() => {
+    callbacksRef.current = {
+      onCellInteract,
+      onPhase3Rotate,
+      onFaceSelect,
+      onPlayerInteract,
+    };
+  }, [onCellInteract, onPhase3Rotate, onFaceSelect, onPlayerInteract]);
 
   useEffect(() => {
     if (!containerRef.current) return undefined;
@@ -26,28 +43,28 @@ const GameCanvas = ({
       }
       const engine = new CubePhysics(containerRef.current, {
         onCellInteract: (target) => {
-          onPlayerInteract?.();
-          onCellInteract?.(target);
+          callbacksRef.current.onPlayerInteract?.();
+          callbacksRef.current.onCellInteract?.(target);
           musicEngine?.trigger('click', { index: target.index });
         },
         onPhase3Rotate: (face, direction) => {
-          onPlayerInteract?.();
-          onPhase3Rotate?.(face, direction);
+          callbacksRef.current.onPlayerInteract?.();
+          callbacksRef.current.onPhase3Rotate?.(face, direction);
           musicEngine?.trigger('rotate', { index: direction > 0 ? 2 : 4 });
         },
         onFaceSelect: (...args) => {
-          onPlayerInteract?.();
-          onFaceSelect?.(...args);
+          callbacksRef.current.onPlayerInteract?.();
+          callbacksRef.current.onFaceSelect?.(...args);
         },
         onRotate: ({ deltaX }) => {
           if (Math.abs(deltaX) > 0.002) {
-            onPlayerInteract?.();
+            callbacksRef.current.onPlayerInteract?.();
             musicEngine?.trigger('rotate', { index: Math.floor(Math.abs(deltaX) * 10) });
           }
         },
         onInteraction: () => {
           musicEngine?.resume();
-          onPlayerInteract?.();
+          callbacksRef.current.onPlayerInteract?.();
         },
       });
       physicsRef.current = engine;
@@ -64,7 +81,7 @@ const GameCanvas = ({
       physicsRef.current?.dispose();
       physicsRef.current = null;
     };
-  }, [musicEngine, onCellInteract, onFaceSelect, onPhase3Rotate, onPlayerInteract]);
+  }, [musicEngine]); // Only recreate when musicEngine changes
 
   useEffect(() => {
     if (!physicsRef.current || !phaseState) return;
