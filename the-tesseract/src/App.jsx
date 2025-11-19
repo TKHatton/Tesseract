@@ -480,6 +480,11 @@ const App = () => {
         musicEngine={musicEngineRef.current}
         onPlayerInteract={handlePlayerInteract}
       />
+      <img
+        src="/logo.png"
+        alt="The Tesseract"
+        className="absolute top-4 left-4 z-50 h-12 w-auto opacity-90 hover:opacity-100 transition-opacity"
+      />
       <button
         type="button"
         onClick={() => openControlsTutorial('help')}
