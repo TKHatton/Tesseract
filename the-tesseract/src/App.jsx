@@ -260,8 +260,12 @@ const App = () => {
       if (result?.progress) {
         progressed = true;
       }
-      if (phase === 1 && checkPhase1Win(nextState)) {
-        didComplete = true;
+      if (phase === 1) {
+        const won = checkPhase1Win(nextState);
+        console.log('Phase 1 win check:', won, 'State:', nextState);
+        if (won) {
+          didComplete = true;
+        }
       }
       if (phase === 2 && checkPhase2Win(nextState.faces)) {
         didComplete = true;
